@@ -2,11 +2,19 @@ import streamlit as st
 st.set_page_config(layout="wide", page_title="Waste management calculator")
 
 ## CSS Custom styles
+## metric label font size and weight
+## sidebar width
 hide_streamlit_style = """
 <style>
 .st-emotion-cache-16idsys p {
     font-size:24px;
+    font-weight:bold;
 }
+
+
+section[data-testid="stSidebar"] {
+            width: 500px !important; # Set the width of side bar to your desired value
+        }
 
 </style>
 
@@ -17,6 +25,7 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Title
 st.write("## Waste management calculator")
+st.write("")
 
 # SIDE BAR
 ## Sidebar title
@@ -78,23 +87,41 @@ total_waste_burnt_landfill = landfillwaste_burnt_urban + landfillwaste_burnt_rur
 
 total_waste_burnt = total_waste_burnt_kerbside + total_waste_burnt_landfill
 
-st.write("### Total waste generated")
-st.metric(label = "Total waste generated",
-          label_visibility = "hidden",
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.metric(label = "Total waste generated",
+          label_visibility = "visible",
           value = "{} TPD".format(round(total_waste_generated)),
           #delta="1.2 TPD"
           )
 
-st.write("### Total waste collected")
-st.metric(label = "Total waste collected",
-          label_visibility = "hidden",
-          value = "{} TPD".format(round(total_waste_collected)),
-          #delta="1.2 TPD"
-          )
+with col2:
+    st.metric(label = "Total waste collected",
+              label_visibility = "visible",
+           value = "{} TPD".format(round(total_waste_collected)),
+           #delta="1.2 TPD"
+           )
+    
+    st.write("")
+    
+    st.metric(label = "Current Landfill capacity",
+              label_visibility = "visible",
+           value = "{} TPD".format(round(landfill_capacity)),
+           #delta="1.2 TPD"
+           )
+    
+    if (total_waste_collected > landfill_capacity):
+        st.write("#### :red[Total waste collected is more than landfill capacity]")
+    else:
+        st.write("#### :blue[Landfill capacity can manage the waste collected]")
 
-st.write("### Total waste burnt")
-st.metric(label = "Total waste burnt",
-          label_visibility = "hidden",
-          value = "{} TPD".format(round(total_waste_burnt)),
-          #delta="1.2 TPD"
-          )
+
+with col3:
+    st.metric(label = "Total waste burnt",
+              label_visibility = "visible",
+              value = "{} TPD".format(round(total_waste_burnt)),
+            #delta="1.2 TPD"
+            )
+    
+    
