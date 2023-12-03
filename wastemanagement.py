@@ -28,18 +28,14 @@ def update_gen_rate():
 
 def reset_delta_efficiency():
     st.session_state.update_type = 'primary_input'
-    # if st.session_state.update_type == None:
-    #     st.session_state.update_type = 'primary_input'
-    #if st.session_state.update_type == 'primary_input':
-        #st.session_state.collection_efficiency_static =  waste_collection_efficiency_urban
-        #st.session_state.delta_wastecollection = 0
+    if st.session_state.update_type == 'primary_input':
+        st.session_state.delta_wastecollection = 0
     
 
 def reset_burn_efficiency():
     st.session_state.update_type = 'primary_input'
-    # if st.session_state.update_type == 'primary_input':
-    #     st.session_state.burnrate_static =  st.session_state.burnrate
-    #     st.session_state.delta_wasteburn = 0
+    if st.session_state.update_type == 'primary_input':
+        st.session_state.delta_wasteburn = 0
 
     
 
@@ -87,10 +83,6 @@ if st.session_state.update_type != 'callback':
     st.session_state.genrate = percapita_waste_gen_urban
 urban_genrate = st.session_state.genrate
 
-
-wet_waste_urban = st.sidebar.slider('Wet waste in Urban (%)', min_value=0, max_value=100, value=30)
-
-
 # URBAN COLLECTION RATE - HAS CALLBACK
 if 'urban_col_efficiency' not in st.session_state:
     st.session_state.urban_col_efficiency = 55 #Default val
@@ -118,6 +110,7 @@ landfill_capacity = st.sidebar.number_input('Landfill capacity (tons/day):',
                                                     value = 300)
 
 landfill_burn_rate = st.sidebar.slider('Landfill burn rate (%)', min_value=0, max_value=100, value=2)
+wet_waste_urban = st.sidebar.slider('Wet waste in Urban (%)', min_value=0, max_value=100, value=30)
 
 ## RURAL INPUTS
 st.sidebar.write("### Rural inputs  :gear:")
@@ -125,11 +118,11 @@ percapita_waste_gen_rural = st.sidebar.number_input('Per capita waste generated 
                                                     placeholder="Per capita waste generated (rural) (kg/cap/day)",
                                                     value = 0.3)
 
-wet_waste_rural = st.sidebar.slider('Wet waste in Rural (%)', min_value=0, max_value=100, value=30)
 
 waste_collection_efficiency_rural = st.sidebar.slider('Waste collection efficiency in Rural (%)', min_value=0, max_value=100, value=5)
 
 waste_burn_rate_rural = st.sidebar.slider('Waste burn rate in Rural (%)', min_value=0, max_value=100, value=100)
+wet_waste_rural = st.sidebar.slider('Wet waste in Rural (%)', min_value=0, max_value=100, value=30)
 
 ## intermediary variables calculations
 urban_population = pop * urbanshare/100
@@ -248,7 +241,10 @@ with tab2:
         
     st.write("# Actionables -- Urban interventions")
     
-    increase_waste_collection = st.slider('I want to increase my waste collection efficiency by (%)', min_value=0, max_value=100, value=0,
+    if 'delta_wastecollection' not in st.session_state:
+        st.session_state.delta_wastecollection = 0 #Default val
+    increase_waste_collection = st.slider('I want to increase my waste collection efficiency by (%)',
+                                          min_value=0, max_value=100,
                                           key='delta_wastecollection',
                                           on_change=update_collection_efficiency)
     
@@ -258,16 +254,22 @@ with tab2:
     if(waste_collection_efficiency_urban>=100):
         st.write("##### :green[Max efficiency acheived]")
 
-    reduce_waste_burn = st.slider('I want to reduce my waste burn rate by (%)', min_value=0, max_value=100, value=0,
-                                          key='delta_wasteburn',
-                                          on_change=update_burn_rate)
+    if 'delta_wasteburn' not in st.session_state:
+        st.session_state.delta_wasteburn = 0 #Default val
+    reduce_waste_burn = st.slider('I want to reduce my waste burn rate by (%)',
+                                  min_value=0, max_value=100,
+                                  key='delta_wasteburn',
+                                  on_change=update_burn_rate)
     c1, c2 = st.columns(2)
     c1.write("#### Old Waste burn rate: {} %".format(round(waste_burn_rate_urban)))
     c2.write("#### New Waste burn rate: {} %".format(round(st.session_state.burnrate)))
     if(waste_burn_rate_urban<=0):
         st.write("##### :green[Max efficiency acheived]")
 
-    change_waste_generation = st.slider('I want to change my waste generate rate by (%)', min_value=-100, max_value=100, value=0,
+    if 'delta_wastegeneration' not in st.session_state:
+        st.session_state.delta_wastegeneration = 0 #Default val
+    change_waste_generation = st.slider('I want to change my waste generate rate by (%)',
+                                        min_value=-100, max_value=100,
                                           key='delta_wastegeneration',
                                           on_change=update_gen_rate)
 
