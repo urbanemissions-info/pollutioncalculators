@@ -127,6 +127,6 @@ with tab1:
         new_pop_weighted_conc = sumprod/total_pop
         st.write('New Population weighted concentration:  {} μg/m3'.format(round(new_pop_weighted_conc,1)))
 
-        net_reduction = round((pop_weighted_conc-new_pop_weighted_conc)/pop_weighted_conc, 1)
+        net_reduction = round(100*(pop_weighted_conc-new_pop_weighted_conc)/pop_weighted_conc, 1)
         st.write('#### :green[Net reduction:  {} %]'.format(round(net_reduction,1)))
 
