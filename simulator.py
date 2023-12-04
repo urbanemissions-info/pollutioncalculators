@@ -22,7 +22,7 @@ hide_streamlit_style = """
     padding: 1rem 2rem 10rem !important;
         }
 
-.st-e3 {
+.st-di {
     padding-top: 13.3px;
 }
 
