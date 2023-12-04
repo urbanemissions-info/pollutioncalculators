@@ -8,8 +8,6 @@ st.set_page_config(layout="wide", page_title="Waste management calculator")
 if 'update_type' not in st.session_state:
     st.session_state.update_type = None
 
-
-
 def update_collection_efficiency():
     st.session_state.update_type = 'callback'
     st.session_state.collection_efficiency = waste_collection_efficiency_urban * (1 + st.session_state.delta_wastecollection/100)
