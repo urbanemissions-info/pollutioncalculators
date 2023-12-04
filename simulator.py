@@ -26,6 +26,10 @@ hide_streamlit_style = """
     padding-top: 13.3px;
 }
 
+.st-dh {
+    padding-top: 13.3px;
+}
+
 .st-emotion-cache-1inwz65 {
     font-size: 0px;
 }
