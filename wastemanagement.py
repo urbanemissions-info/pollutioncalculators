@@ -1,6 +1,39 @@
 import streamlit as st
 st.set_page_config(layout="wide", page_title="Waste management calculator")
 
+from PIL import Image, ImageDraw, ImageOps
+import random
+
+def crop_triangle(image_path, waste_collected):
+    # Open the image
+    original_image = Image.open(image_path)
+    original_image = original_image.resize((2400, int(waste_collected)))
+
+    # Create a mask for the triangle
+    mask = Image.new('L', original_image.size, 0)
+    draw = ImageDraw.Draw(mask)
+
+    # Calculate the triangle vertices based on waste_collected
+    width, height = original_image.size
+    x1, y1 = width // 2, 0
+    x2, y2 = width // 2 - waste_collected, waste_collected
+    x3, y3 = width // 2 + waste_collected, waste_collected
+
+    # Draw the triangle on the mask
+    draw.polygon([(x1, y1), (x2, y2), (x3, y3)], fill=255)
+
+    # Apply the mask to the original image
+    cropped_image = Image.new('RGBA', original_image.size, (255,255,255,0))
+    cropped_image.paste(original_image, mask=mask)
+
+    print(original_image.size)
+    print(x1, y2)
+
+    # Save or display the result
+    cropped_image.save('garbage_mountain.png')  # You can change the filename
+
+image_path = 'garbage_texture.jpeg'  # Replace with your actual image path
+
 # Following line will help in seeing dynamic session states
 #"st.session_state object:" , st.session_state
 
@@ -166,6 +199,8 @@ with tab1:
             value = "{} TPD".format(round(total_waste_generated)),
             #delta="1.2 TPD"
             )
+        crop_triangle(image_path, total_waste_generated)
+        st.image('garbage_mountain.png')
 
     with col2:
         st.metric(label = "Total waste collected",
@@ -208,6 +243,8 @@ with tab2:
             value = "{} TPD".format(round(total_waste_generated)),
             #delta="1.2 TPD"
             )
+        crop_triangle(image_path, total_waste_generated)
+        st.image('garbage_mountain.png')
 
     with col2:
         st.metric(label = "Total waste collected",
@@ -236,6 +273,8 @@ with tab2:
                 value = "{} TPD".format(round(total_waste_burnt)),
                 #delta="1.2 TPD"
                 )
+        
+
         
     st.write("# Actionables -- Urban interventions")
     
