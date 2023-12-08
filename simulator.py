@@ -163,5 +163,4 @@ with tab3:
 
     net_reduction = 100*(pop_weighted_conc-pop_weighted_conc_new)/pop_weighted_conc
 
-    print(net_reduction)
-
+    
