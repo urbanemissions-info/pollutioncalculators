@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 st.set_page_config(layout="wide", page_title="AQI Simulator")
 
@@ -137,22 +138,33 @@ with tab1:
 
 #*************** TAB 3 - V3 ***************#
 with tab3:
+    c1, c2 = st.columns(2)
     zone_concentrations_df = pd.read_csv('zone_concentrations_default.csv')
+    
+    with c1:
+        zone_concentrations_df = st.data_editor(zone_concentrations_df, num_rows="dynamic")
+
+
     sourceapportionment_df = pd.read_csv('sourceapportionment_default.csv')
     reduction_sourcewise_df = pd.read_csv('reduction_sourcewise.csv')
+    with c2:
+        reduction_sourcewise_df = st.data_editor(reduction_sourcewise_df)
 
     sourceapportionment_array = np.array(sourceapportionment_df.iloc[:,1:].values)
     zone_concentrations_array = np.array(zone_concentrations_df.iloc[:,1:2].values)
-    zone_populations_array = np.array(zone_concentrations_df.iloc[:,2:].values)
+    zone_populations_array = np.array(zone_concentrations_df.iloc[:,2:3].values)
     pop_weighted_conc = np.dot(zone_concentrations_array.T,zone_populations_array)/np.sum(zone_populations_array)
     
     reduction_sourcewise_array = np.array(reduction_sourcewise_df.iloc[:,1:].values)
+    reduction_sourcewise_array = np.array([[float(percent[:-1])/100 for percent in row] for row in reduction_sourcewise_array])
     reduction_sourcewise_array = 1- reduction_sourcewise_array
 
     source_concentrations_old = sourceapportionment_array*(zone_concentrations_array.T)
     source_concentrations_new = source_concentrations_old*reduction_sourcewise_array
 
     zone_concentrations_avg_new = np.sum(source_concentrations_new, axis=0)
+
+    zone_concentrations_df['new_conc'] = zone_concentrations_avg_new
     sourceapportionment_new = source_concentrations_new/zone_concentrations_avg_new
 
     source_pmsa_old = np.dot(source_concentrations_old,zone_populations_array)/np.sum(zone_populations_array)
@@ -162,5 +174,35 @@ with tab3:
     pop_weighted_conc_new = np.dot(zone_concentrations_avg_new.T,zone_populations_array)/np.sum(zone_populations_array)
 
     net_reduction = 100*(pop_weighted_conc-pop_weighted_conc_new)/pop_weighted_conc
+    net_reduction_sourcewise = 100*(source_pmsa_old - source_pmsa_new)/source_pmsa_old
 
+    source_pmsa_new_pct = source_pmsa_new/pop_weighted_conc_new
+    source_pmsa_old_pct = source_pmsa_old/pop_weighted_conc
+
+    
+    source_pmsa_old_pct_fig = px.pie(values = list(100*source_pmsa_old_pct.T.flatten()),
+                                     names = sourceapportionment_df['Source'].to_list())
+    
+    source_pmsa_new_pct_fig = px.pie(values = list(100*source_pmsa_new_pct.T.flatten()),
+                                     names = sourceapportionment_df['Source'].to_list())
+    
+    ## *** All calculations done *** ##
+
+    #num_zoness = st.number_input("Number of Zones in the City: ", value=5)    
+    
+
+    
+    st.write(np.sum(zone_populations_array))
+    c1, c2 = st.columns(2)
+    with c1:
+        st.metric(label='Population weighted concentration - old',
+                  value = pop_weighted_conc)
+        st.write("### Source apportionment - old")
+        st.plotly_chart(source_pmsa_old_pct_fig)
+
+    with c2:
+        st.metric(label='Population weighted concentration - new',
+                  value = pop_weighted_conc_new)
+        st.write("### Source apportionment - new")
+        st.plotly_chart(source_pmsa_new_pct_fig)
     
