@@ -156,7 +156,7 @@ with tab3:
     sourceapportionment_df = pd.read_csv('sourceapportionment_default.csv')
     reduction_sourcewise_df = pd.read_csv('reduction_sourcewise.csv')
     with c2:
-        column_config_dict = {}
+        column_config_dict = dict()
         zones = reduction_sourcewise_df.columns
         zones = [zone for zone in zones if zone[0]=='Z']
         for zone in zones:
