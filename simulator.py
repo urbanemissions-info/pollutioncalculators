@@ -148,7 +148,18 @@ with tab3:
     sourceapportionment_df = pd.read_csv('sourceapportionment_default.csv')
     reduction_sourcewise_df = pd.read_csv('reduction_sourcewise.csv')
     with c2:
-        reduction_sourcewise_df = st.data_editor(reduction_sourcewise_df)
+        column_config_dict = {}
+        zones = reduction_sourcewise_df.columns
+        zones = [zone for zone in zones if zone[0]=='Z']
+        for zone in zones:
+            column_config_dict[zone] = st.column_config.NumberColumn(
+                                                            zone,
+                                                            format="%f %%",
+                                                            min_value=0,
+                                                            max_value=100,
+                                                        )
+        reduction_sourcewise_df = st.data_editor(reduction_sourcewise_df,
+                                                 column_config=column_config_dict)
 
     sourceapportionment_array = np.array(sourceapportionment_df.iloc[:,1:].values)
     zone_concentrations_array = np.array(zone_concentrations_df.iloc[:,1:2].values)
@@ -156,7 +167,7 @@ with tab3:
     pop_weighted_conc = np.dot(zone_concentrations_array.T,zone_populations_array)/np.sum(zone_populations_array)
     
     reduction_sourcewise_array = np.array(reduction_sourcewise_df.iloc[:,1:].values)
-    reduction_sourcewise_array = np.array([[float(percent[:-1])/100 for percent in row] for row in reduction_sourcewise_array])
+    reduction_sourcewise_array = reduction_sourcewise_array/100
     reduction_sourcewise_array = 1- reduction_sourcewise_array
 
     source_concentrations_old = sourceapportionment_array*(zone_concentrations_array.T)
