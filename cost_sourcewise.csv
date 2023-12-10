@@ -1,0 +1,9 @@
+Source,cost per ug/m3
+Cooking,5000.0
+Heating,300.0
+Waste.Burn,1000.0
+Industries,5000.0
+Freight,2000.0
+Pass.Travel,2000.0
+Dust,100.0
+Boundary,1000.0

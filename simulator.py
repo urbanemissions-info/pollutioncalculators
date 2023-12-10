@@ -138,6 +138,9 @@ with tab1:
 
 #*************** TAB 3 - V3 ***************#
 with tab3:
+    costs_sourcewise_df = pd.read_csv('cost_sourcewise.csv')
+    costs_sourcewise_array = np.array(costs_sourcewise_df['cost per ug/m3'].values)
+    
     c1, c2 = st.columns(2)
     zone_concentrations_df = pd.read_csv('zone_concentrations_default.csv')
     
@@ -220,7 +223,11 @@ with tab3:
                                      color = sourceapportionment_df['Source'].to_list(),
                                      color_discrete_map=sources_cmap)
     
-    ## *** All calculations done *** ##
+    
+    costs_incurred = costs_sourcewise_array*(source_pmsa_old.T - source_pmsa_new.T).flatten()
+    sum_cost_incurred = np.sum(costs_incurred)
+
+    ## *** All calculations done - even for v4 *** ##
 
     #num_zoness = st.number_input("Number of Zones in the City: ", value=5)    
     
