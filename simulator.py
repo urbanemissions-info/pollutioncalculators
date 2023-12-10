@@ -142,7 +142,15 @@ with tab3:
     zone_concentrations_df = pd.read_csv('zone_concentrations_default.csv')
     
     with c1:
-        zone_concentrations_df = st.data_editor(zone_concentrations_df, num_rows="dynamic")
+        zone_concentrations_df['Zone.pop (mil)'] = zone_concentrations_df['Zone.pop (mil)'].astype(str)
+        # Because streamlit better edits floats when they are like strings. We will reconvert them to floats
+        zone_concentrations_df = st.data_editor(zone_concentrations_df, num_rows="dynamic",
+                                                column_config= {
+                                                    "Zone.pop (mil)": st.column_config.TextColumn(
+                                                        "Zone.pop (mil)"
+                                                )})
+        zone_concentrations_df['Zone.pop (mil)'] = zone_concentrations_df['Zone.pop (mil)'].astype(float)
+        
 
 
     sourceapportionment_df = pd.read_csv('sourceapportionment_default.csv')
@@ -191,11 +199,26 @@ with tab3:
     source_pmsa_old_pct = source_pmsa_old/pop_weighted_conc
 
     
+    sources_cmap = {
+                    'Pass.Travel': 'DarkGoldenRod', #gold
+                    'Cooking':'DarkGray', #grey
+                    'Freight':'LightCyan',
+                    'Boundary':'DarkSlateBlue', #blue
+                    'Dust':'SaddleBrown',#brown
+                    'Industries': 'DarkMagenta', #magenta
+                    'Heating': 'Darkorange', #orange
+                    'Waste.Burn': 'IndianRed' #red
+                    }
+    
     source_pmsa_old_pct_fig = px.pie(values = list(100*source_pmsa_old_pct.T.flatten()),
-                                     names = sourceapportionment_df['Source'].to_list())
+                                     names = sourceapportionment_df['Source'].to_list(),
+                                     color = sourceapportionment_df['Source'].to_list(),
+                                     color_discrete_map=sources_cmap)
     
     source_pmsa_new_pct_fig = px.pie(values = list(100*source_pmsa_new_pct.T.flatten()),
-                                     names = sourceapportionment_df['Source'].to_list())
+                                     names = sourceapportionment_df['Source'].to_list(),
+                                     color = sourceapportionment_df['Source'].to_list(),
+                                     color_discrete_map=sources_cmap)
     
     ## *** All calculations done *** ##
 
@@ -205,15 +228,19 @@ with tab3:
     
     st.write(np.sum(zone_populations_array))
     c1, c2 = st.columns(2)
+    
     with c1:
         st.metric(label='Population weighted concentration - old',
-                  value = pop_weighted_conc)
+                  value = round(pop_weighted_conc[0][0],2))
         st.write("### Source apportionment - old")
-        st.plotly_chart(source_pmsa_old_pct_fig)
+        st.plotly_chart(source_pmsa_old_pct_fig,
+                        theme=None
+                        )
 
     with c2:
         st.metric(label='Population weighted concentration - new',
-                  value = pop_weighted_conc_new)
+                  value = round(pop_weighted_conc_new[0],2))
         st.write("### Source apportionment - new")
-        st.plotly_chart(source_pmsa_new_pct_fig)
+        st.plotly_chart(source_pmsa_new_pct_fig,
+                        theme=None)
     
