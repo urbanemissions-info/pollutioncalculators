@@ -184,11 +184,12 @@ landfillwaste_burnt_rural = landfill_burn_rate/100 * rural_waste_collected
 total_waste_burnt_landfill = landfillwaste_burnt_urban + landfillwaste_burnt_rural
 
 total_waste_burnt = total_waste_burnt_kerbside + total_waste_burnt_landfill
+st.write("## Waste management calculator")
+
 tab1, tab2 = st.tabs(["V1", "V2"])
 
 with tab1:
     # Title
-    st.write("## Waste management calculator")
     st.write("")
 
     col1, col2, col3 = st.columns(3)
@@ -232,7 +233,6 @@ with tab1:
     
 with tab2:
     # Title
-    st.write("## Waste management calculator")
     st.write("")
 
     col1, col2, col3 = st.columns(3)
@@ -313,3 +313,8 @@ with tab2:
     c1, c2 = st.columns(2)
     c1.write("#### Old Waste generation rate: {} (kg/cap/day)".format(round(percapita_waste_gen_urban, 2)))
     c2.write("#### New Waste generation rate: {} (kg/cap/day)".format(round(st.session_state.genrate, 2)))
+
+    
+col1, col2, col3 = st.columns([1,11,1])
+with col3:
+    st.image("logo.grid.3_transp.png", width=70)

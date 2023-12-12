@@ -25,13 +25,10 @@ hide_streamlit_style = """
     padding: 1rem 2rem 10rem !important;
         }
 
-.st-di {
+.st-e3 {
     padding-top: 13.3px;
 }
 
-.st-dh {
-    padding-top: 13.3px;
-}
 
 .st-emotion-cache-1inwz65 {
     font-size: 0px;
@@ -40,6 +37,7 @@ hide_streamlit_style = """
 code {
     font-size: 1.6em;
 }
+
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
@@ -251,3 +249,7 @@ with tab3:
         st.plotly_chart(source_pmsa_new_pct_fig,
                         theme=None)
     
+
+col1, col2, col3 = st.columns([1,11,1])
+with col3:
+    st.image("logo.grid.3_transp.png", width=70)
