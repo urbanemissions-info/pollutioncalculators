@@ -186,7 +186,7 @@ total_waste_burnt_landfill = landfillwaste_burnt_urban + landfillwaste_burnt_rur
 total_waste_burnt = total_waste_burnt_kerbside + total_waste_burnt_landfill
 st.write("## Waste management calculator")
 
-tab1, tab2 = st.tabs(["V1", "V2"])
+tab1, tab2 = st.tabs(["Calculator", "Simulator"])
 
 with tab1:
     # Title

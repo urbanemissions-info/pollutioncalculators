@@ -43,7 +43,7 @@ st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 
 st.title("AQI Simulator")
-tab1, tab2, tab3, tab4 = st.tabs(["V1", "V2", "V3", "V4"])
+tab1, tab2, tab3, tab4 = st.tabs(["AQI", "V2", "Source apportionment", "V4"])
 
 #*************** TAB 1 - V1 ***************#
 with tab1:
@@ -229,9 +229,6 @@ with tab3:
 
     #num_zoness = st.number_input("Number of Zones in the City: ", value=5)    
     
-
-    
-    st.write(np.sum(zone_populations_array))
     c1, c2 = st.columns(2)
     
     with c1:
