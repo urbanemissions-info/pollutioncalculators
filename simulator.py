@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-st.set_page_config(layout="wide", page_title="AQI Simulator")
+st.set_page_config(layout="wide", page_title="Air Quality Simulator")
 
 # Following line will help in seeing dynamic session states
 #"st.session_state object:" , st.session_state
@@ -41,9 +41,12 @@ code {
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
+col1, col2, col3 = st.columns([1,11,1])
+with col3:
+    st.image("logo.grid.3_transp.png", width=70)
 
 st.title("AQI Simulator")
-tab1, tab2, tab3, tab4 = st.tabs(["AQI", "V2", "Source apportionment", "V4"])
+tab1, tab2, tab3, tab4 = st.tabs(["Air Quality", "V2", "Source apportionment", "V4"])
 
 #*************** TAB 1 - V1 ***************#
 with tab1:
@@ -247,6 +250,3 @@ with tab3:
                         theme=None)
     
 
-col1, col2, col3 = st.columns([1,11,1])
-with col3:
-    st.image("logo.grid.3_transp.png", width=70)
