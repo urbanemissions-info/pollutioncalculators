@@ -265,22 +265,13 @@ with tab3:
     
     c1, c2 = st.columns(2)
     zone_concentrations_df = pd.read_csv('zone_concentrations_default.csv')
-    
-    with c1:
-        zone_concentrations_df['Zone.pop (mil)'] = zone_concentrations_df['Zone.pop (mil)'].astype(str)
-        # Because streamlit better edits floats when they are like strings. We will reconvert them to floats
-        zone_concentrations_df = st.data_editor(zone_concentrations_df, num_rows="dynamic",
-                                                column_config= {
-                                                    "Zone.pop (mil)": st.column_config.TextColumn(
-                                                        "Zone.pop (mil)"
-                                                )})
-        zone_concentrations_df['Zone.pop (mil)'] = zone_concentrations_df['Zone.pop (mil)'].astype(float)
-        
-
 
     sourceapportionment_df = pd.read_csv('sourceapportionment_default.csv')
     reduction_sourcewise_df = pd.read_csv('reduction_sourcewise.csv')
+
+    reduction_sourcewise_df = reduction_sourcewise_df.round(1)
     with c2:
+        st.write('### Source wise reductions')
         column_config_dict = dict()
         zones = reduction_sourcewise_df.columns
         zones = [zone for zone in zones if zone[0]=='Z']
@@ -308,7 +299,18 @@ with tab3:
 
     zone_concentrations_avg_new = np.sum(source_concentrations_new, axis=0)
 
-    zone_concentrations_df['new_conc'] = zone_concentrations_avg_new
+    zone_concentrations_df['Avg.conc ug/m3 (new)'] = zone_concentrations_avg_new.round(1)
+    
+    with c1:
+        zone_concentrations_df['Zone.pop (mil)'] = zone_concentrations_df['Zone.pop (mil)'].astype(str)
+        # Because streamlit better edits floats when they are like strings. We will reconvert them to floats
+        zone_concentrations_df = st.data_editor(zone_concentrations_df, num_rows="dynamic",
+                                                column_config= {
+                                                    "Zone.pop (mil)": st.column_config.TextColumn(
+                                                        "Zone.pop (mil)"
+                                                )})
+        zone_concentrations_df['Zone.pop (mil)'] = zone_concentrations_df['Zone.pop (mil)'].astype(float)
+
     sourceapportionment_new = source_concentrations_new/zone_concentrations_avg_new
 
     source_pmsa_old = np.dot(source_concentrations_old,zone_populations_array)/np.sum(zone_populations_array)
@@ -357,16 +359,68 @@ with tab3:
     
     with c1:
         st.metric(label='Population weighted concentration - old',
-                  value = round(pop_weighted_conc[0][0],2))
+                  value = round(pop_weighted_conc[0][0],1))
+        
         st.write("### Source apportionment - old")
+        column_config_dict = dict()
+        zones = sourceapportionment_df.columns
+        zones = [zone for zone in zones if zone[0]=='Z']
+        for zone in zones:
+            sourceapportionment_df[zone] = sourceapportionment_df[zone]*100
+            column_config_dict[zone] = st.column_config.NumberColumn(
+                                                            zone,
+                                                            format="%.1f %%",
+                                                            min_value=0,
+                                                            max_value=100,
+                                                        )
+        
+                
+        sourceapportionment_df = st.data_editor(sourceapportionment_df,
+                                              column_config=column_config_dict)
+        
+        total_df = pd.DataFrame(sourceapportionment_df.sum(numeric_only=True)).round()
+        total_df = total_df.T
+        total_df['Source'] = 'Total              '
+        total_df = total_df[['Source','Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8','Z9','Z10']]
+
+        if all([True if round(i) ==100 else False for i in sourceapportionment_df.sum(numeric_only=True).to_list()]):
+            pass
+        else:
+            def style(val, props=''):
+                return props if val > 100 else None
+            
+            st.dataframe(total_df.style.format(precision=2).map(style, props='color:red;',
+                                            subset=['Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8','Z9','Z10']))
+            st.write('Please check source apportionment values. Column Sum should be 100')
+
         st.plotly_chart(source_pmsa_old_pct_fig,
                         theme=None
                         )
 
     with c2:
         st.metric(label='Population weighted concentration - new',
-                  value = round(pop_weighted_conc_new[0],2))
+                  value = round(pop_weighted_conc_new[0],1))
         st.write("### Source apportionment - new")
+
+        sourceapportionment_new_df = pd.DataFrame(sourceapportionment_new)
+        sourceapportionment_new_df['Source'] = sourceapportionment_df['Source']
+        sourceapportionment_new_df.columns = ['Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8','Z9','Z10','Source']
+        sourceapportionment_new_df = sourceapportionment_new_df[['Source','Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8','Z9','Z10']]
+
+        column_config_dict = dict()
+        zones = sourceapportionment_df.columns
+        zones = [zone for zone in zones if zone[0]=='Z']
+        for zone in zones:
+            sourceapportionment_new_df[zone] = sourceapportionment_new_df[zone]*100
+            column_config_dict[zone] = st.column_config.NumberColumn(
+                                                            zone,
+                                                            format="%.1f %%",
+                                                            min_value=0,
+                                                            max_value=100,
+                                                        )
+            
+        st.data_editor(sourceapportionment_new_df, column_config=column_config_dict)
+        
         st.plotly_chart(source_pmsa_new_pct_fig,
                         theme=None)
     
