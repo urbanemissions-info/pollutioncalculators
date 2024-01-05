@@ -35,6 +35,10 @@ code {
     font-size: 1.6em;
 }
 
+.st-do {
+    height: 12px;
+}
+
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
@@ -46,7 +50,7 @@ with col1:
     st.title("AQI Simulator")
 
 
-tab1, tab2, tab3, tab4 = st.tabs(["AQ Calculator", "AQ Solver", "Source apportionment", "V4"])
+tab1, tab2, tab3, tab4 = st.tabs(["AQ Calculator", "AQ Solver", "Source apportionment", "Source apportionment Solver"])
 
 #*************** TAB 1 - V1 ***************#
 with tab1:
@@ -424,4 +428,224 @@ with tab3:
         st.plotly_chart(source_pmsa_new_pct_fig,
                         theme=None)
     
+        st.metric(label='Cost incurred',
+                  value = round(sum_cost_incurred))
 
+with tab4:
+    container = st.container(border=True)
+    with container:
+        net_reduction = st.slider('I want to reduce pollution in the city by:(%)', value=30)
+
+        c1, c2, c3, c4= st.columns(4)
+        max_reduction_cooking = c1.slider('Max reduction for Cooking(%)', value=50)
+        max_reduction_heating = c1.slider('Max reduction for Heating(%)', value=30)
+        max_reduction_wasteburn = c2.slider('Max reduction for WasteBurn(%)', value=50)
+        max_reduction_industries = c2.slider('Max reduction for Industries(%)', value=30)
+        max_reduction_freight = c3.slider('Max reduction for Freight(%)', value=30)
+        max_reduction_passtravel = c3.slider('Max reduction for Pass Travel(%)', value=30)
+        max_reduction_dust = c4.slider('Max reduction for Dust(%)', value=30)
+        max_reduction_boundary = c4.slider('Max reduction for Boundary(%)', value=10)
+
+    zone_concentrations_df = pd.read_csv('zone_concentrations_default.csv')
+    zone_pollutions_old = np.array(zone_concentrations_df['Avg.Conc ug/m3'])
+    zone_populations = list(zone_concentrations_df['Zone.pop (mil)'])
+    
+    avg_pollution_old = sum(x * y for x, y in zip(zone_pollutions_old, zone_populations))/sum(zone_populations)
+    avg_pollution_new = avg_pollution_old*(1-net_reduction/100)
+
+    sourceapportionment_df = pd.read_csv('sourceapportionment_default.csv')
+    sourceapportionment_array = np.array(sourceapportionment_df.iloc[:,1:].values)
+    zone_pollutions_old_sourcewise = sourceapportionment_array * zone_pollutions_old
+
+    pmsa_old = np.dot(zone_pollutions_old_sourcewise,zone_populations)/np.sum(zone_populations)
+    
+    max_reductions_sourcewise = {'C':max_reduction_cooking,
+                                'H':max_reduction_heating,
+                                'W':max_reduction_wasteburn,
+                                'I':max_reduction_industries,
+                                'F':max_reduction_freight,
+                                'P':max_reduction_passtravel,
+                                'D':max_reduction_dust,
+                                'B':max_reduction_boundary
+                                }
+
+    pmsa_new_maxreduced = pmsa_old * (100 - np.array(list(max_reductions_sourcewise.values())))/100
+
+    # Create a LP Minimization problem 
+    Lp_prob = p.LpProblem('Problem', sense = p.LpMinimize)  
+
+    num_zones = 10 #user input
+
+    var_dict = dict()
+    # Source wise reduction in each zone
+    for i in range(1,num_zones+1,1):
+        var_dict['R'+str(i)+'C'] = p.LpVariable("R"+str(i)+'C', lowBound = 0, upBound = 1)
+        var_dict['R'+str(i)+'H'] = p.LpVariable("R"+str(i)+'H', lowBound = 0, upBound = 1)
+        var_dict['R'+str(i)+'W'] = p.LpVariable("R"+str(i)+'W', lowBound = 0, upBound = 1)
+        var_dict['R'+str(i)+'I'] = p.LpVariable("R"+str(i)+'I', lowBound = 0, upBound = 1)
+        var_dict['R'+str(i)+'F'] = p.LpVariable("R"+str(i)+'F', lowBound = 0, upBound = 1)
+        var_dict['R'+str(i)+'P'] = p.LpVariable("R"+str(i)+'P', lowBound = 0, upBound = 1)
+        var_dict['R'+str(i)+'D'] = p.LpVariable("R"+str(i)+'D', lowBound = 0, upBound = 1)
+        var_dict['R'+str(i)+'B'] = p.LpVariable("R"+str(i)+'B', lowBound = 0, upBound = 1)
+
+    # Upper bounds -- currently for each zone. need to change it to ovr all.
+
+    # Objective Function 
+    Lp_prob += (p.lpSum([zone_populations[i-1] * zone_pollutions_old_sourcewise[idx][i-1] * var_dict['R'+str(i)+s] for idx, s in enumerate(['C', 'H', 'W', 'I', 'F', 'P' ,'D', 'B']) for i in range(1,num_zones+1,1)]))/sum(zone_populations)
+
+    # Constraints: 
+    Lp_prob += (p.lpSum([zone_populations[i-1] * zone_pollutions_old_sourcewise[idx][i-1] * var_dict['R'+str(i)+s] for idx, s in enumerate(['C', 'H', 'W', 'I', 'F', 'P' ,'D', 'B']) for i in range(1,num_zones+1,1)]))/sum(zone_populations) == (avg_pollution_old - avg_pollution_new)
+
+    for idx, s in enumerate(['C', 'H', 'W', 'I', 'F', 'P' ,'D', 'B']):
+        Lp_prob += p.lpSum([zone_populations[i-1] * zone_pollutions_old_sourcewise[0][i-1] * var_dict['R'+str(i)+s] for i in range(1,num_zones+1,1)])/sum(zone_populations) <= pmsa_old[idx] - pmsa_new_maxreduced[idx]
+
+    # Display the problem 
+    print(Lp_prob) 
+
+    status = Lp_prob.solve()   
+    print(p.LpStatus[status])   # The solution status 
+
+    #print([p.value(var_dict['Z'+str(i)]) for i in range(1,num_zones+1,1)], p.value(Lp_prob.objective))
+    reductions = [p.value(var_dict['R'+str(i)+s]) for s in ['C', 'H', 'W', 'I', 'F', 'P' ,'D', 'B'] for i in range(1,num_zones+1,1)]
+    reductions_array = np.array(reductions).reshape(8, 10)
+
+    c1, c2 = st.columns(2)
+
+    with c2:
+        st.write('### Source wise reductions')
+        reduction_sourcewise_df = pd.DataFrame(reductions_array*100)
+        reduction_sourcewise_df.columns = ['Z1', 'Z2', 'Z3', 'Z4', 'Z5', 'Z6', 'Z7', 'Z8', 'Z9', 'Z10']
+        reduction_sourcewise_df.index = list(sourceapportionment_df.Source)
+        reduction_sourcewise_df = reduction_sourcewise_df.reset_index().rename(columns={'index':'Source'})
+        column_config_dict = dict()
+        zones = reduction_sourcewise_df.columns
+        zones = [zone for zone in zones if zone[0]=='Z']
+        for zone in zones:
+            column_config_dict[zone] = st.column_config.NumberColumn(
+                                                            zone,
+                                                            format="%0.1f %%",
+                                                            min_value=0,
+                                                            max_value=100,
+                                                        )
+        reduction_sourcewise_df = st.data_editor(reduction_sourcewise_df,
+                                                 column_config=column_config_dict
+                                                 )
+        
+    reduction_sourcewise_array = np.array(reduction_sourcewise_df.iloc[:,1:].values)
+    reduction_sourcewise_array = reduction_sourcewise_array/100
+    reduction_sourcewise_array = 1 - reduction_sourcewise_array
+    zone_pollutions_new_sourcewise = zone_pollutions_old_sourcewise*reduction_sourcewise_array
+
+    zone_concentrations_avg_new = np.sum(zone_pollutions_new_sourcewise, axis=0)
+
+    zone_concentrations_df['Avg.conc ug/m3 (new)'] = zone_concentrations_avg_new.round(1)
+
+    with c1:
+        zone_concentrations_df['Zone.pop (mil)'] = zone_concentrations_df['Zone.pop (mil)'].astype(str)
+        # Because streamlit better edits floats when they are like strings. We will reconvert them to floats
+        zone_concentrations_df = st.data_editor(zone_concentrations_df, num_rows="dynamic",
+                                                column_config= {
+                                                    "Zone.pop (mil)": st.column_config.TextColumn(
+                                                        "Zone.pop (mil)"
+                                                )},
+                                                key='zone_pollutions')
+        zone_concentrations_df['Zone.pop (mil)'] = zone_concentrations_df['Zone.pop (mil)'].astype(float)
+
+    sourceapportionment_new = zone_pollutions_new_sourcewise/zone_concentrations_avg_new
+    pmsa_old = np.dot(zone_pollutions_old_sourcewise,zone_populations)/np.sum(zone_populations)
+    pmsa_new = np.dot(zone_pollutions_new_sourcewise,zone_populations)/np.sum(zone_populations)
+
+    pop_weighted_conc_new = np.dot(zone_concentrations_avg_new.T,zone_populations)/np.sum(zone_populations)
+
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.metric(label='Pop. weighted concentration - old',
+                  value = round(avg_pollution_old,1))
+    with c3:
+        st.metric(label='Pop. weighted concentration - new',
+                  value = round(pop_weighted_conc_new,1))
+    with c4:
+        st.metric(label='Net reduction (%)',
+                  value = round(100*(avg_pollution_old-pop_weighted_conc_new)/avg_pollution_old,1))
+    
+    c1, c2 = st.columns(2)
+    with c1:        
+        st.write("### Source apportionment - old")
+        column_config_dict = dict()
+        zones = sourceapportionment_df.columns
+        zones = [zone for zone in zones if zone[0]=='Z']
+        for zone in zones:
+            sourceapportionment_df[zone] = sourceapportionment_df[zone]*100
+            column_config_dict[zone] = st.column_config.NumberColumn(
+                                                            zone,
+                                                            format="%.1f %%",
+                                                            min_value=0,
+                                                            max_value=100,
+                                                        )
+        
+                
+        sourceapportionment_df = st.data_editor(sourceapportionment_df,
+                                              column_config=column_config_dict,
+                                              key='sourceapportionment_v4')
+        
+        total_df = pd.DataFrame(sourceapportionment_df.sum(numeric_only=True)).round()
+        total_df = total_df.T
+        total_df['Source'] = 'Total              '
+        total_df = total_df[['Source','Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8','Z9','Z10']]
+
+        if all([True if round(i) ==100 else False for i in sourceapportionment_df.sum(numeric_only=True).to_list()]):
+            pass
+        else:
+            def style(val, props=''):
+                return props if val > 100 else None
+            
+            st.dataframe(total_df.style.format(precision=2).map(style, props='color:red;',
+                                            subset=['Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8','Z9','Z10']))
+            st.write('Please check source apportionment values. Column Sum should be 100')
+
+        ## PLOTLY FIGURE
+        source_pmsa_old_pct_fig = px.pie(values = list(100*pmsa_old.T.flatten()),
+                                     names = sourceapportionment_df['Source'].to_list(),
+                                     color = sourceapportionment_df['Source'].to_list(),
+                                     color_discrete_map=sources_cmap)
+    
+        
+        st.plotly_chart(source_pmsa_old_pct_fig,
+                        theme=None
+                        )
+
+    with c2:
+        st.write("### Source apportionment - new")
+
+        sourceapportionment_new_df = pd.DataFrame(sourceapportionment_new)
+        sourceapportionment_new_df['Source'] = sourceapportionment_df['Source']
+        sourceapportionment_new_df.columns = ['Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8','Z9','Z10','Source']
+        sourceapportionment_new_df = sourceapportionment_new_df[['Source','Z1','Z2','Z3','Z4','Z5','Z6','Z7','Z8','Z9','Z10']]
+
+        column_config_dict = dict()
+        zones = sourceapportionment_df.columns
+        zones = [zone for zone in zones if zone[0]=='Z']
+        for zone in zones:
+            sourceapportionment_new_df[zone] = sourceapportionment_new_df[zone]*100
+            column_config_dict[zone] = st.column_config.NumberColumn(
+                                                            zone,
+                                                            format="%.1f %%",
+                                                            min_value=0,
+                                                            max_value=100,
+                                                        )
+            
+        st.data_editor(sourceapportionment_new_df, column_config=column_config_dict, key='sourceapportionment_new_v4')
+        
+        ## PLOTLY FIGURE
+        source_pmsa_new_pct_fig = px.pie(values = list(100*pmsa_new.T.flatten()),
+                                     names = sourceapportionment_df['Source'].to_list(),
+                                     color = sourceapportionment_df['Source'].to_list(),
+                                     color_discrete_map=sources_cmap)
+        
+        st.plotly_chart(source_pmsa_new_pct_fig,
+                        theme=None)
+        
+        costs_incurred = costs_sourcewise_array*(pmsa_old.T - pmsa_new.T).flatten()
+        sum_cost_incurred = np.sum(costs_incurred)
+        st.metric(label='Cost incurred',
+                  value = round(sum_cost_incurred))
