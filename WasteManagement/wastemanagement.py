@@ -50,12 +50,6 @@ hide_streamlit_style = """
     font-size:24px;
     font-weight:bold;
 }
-
-
-section[data-testid="stSidebar"] {
-            width: 500px !important; # Set the width of side bar to your desired value
-        }
-
 </style>
 
 """
@@ -107,7 +101,7 @@ urban_burnrate = st.session_state.burnrate
 
 landfill_capacity = st.sidebar.number_input('Landfill capacity (tons/day):',
                                                     placeholder="Landfill capacity (tons/day)",
-                                                    value = 300)
+                                                    value = 250)
 
 landfill_burn_rate = st.sidebar.slider('Landfill burn rate (%)', min_value=0, max_value=100, value=2)
 wet_waste_urban = st.sidebar.slider('Wet waste in Urban (%)', min_value=0, max_value=100, value=30)
@@ -155,7 +149,7 @@ total_waste_burnt_landfill = landfillwaste_burnt_urban + landfillwaste_burnt_rur
 total_waste_burnt = total_waste_burnt_kerbside + total_waste_burnt_landfill
 col1, col2, col3 = st.columns([11,1,1])
 with col3:
-    st.image("logo.grid.3_transp.png", width=70)
+    st.image("assets/logo.grid.3_transp.png", width=70)
 
 with col1:
     st.write("## Waste management calculator")
@@ -204,8 +198,46 @@ with tab1:
                 )
     
 with tab2:
-    # Title
-    st.write("")
+    # Title        
+    st.write("### Actionables - Urban interventions")
+    
+    if 'delta_wastecollection' not in st.session_state:
+        st.session_state.delta_wastecollection = 0 #Default val
+    increase_waste_collection = st.slider('I want to increase my waste collection efficiency by (%)',
+                                          min_value=0, max_value=100,
+                                          key='delta_wastecollection',
+                                          on_change=update_collection_efficiency)
+    
+    c1, c2 = st.columns(2)
+    c1.write("**Old Waste collection Efficiency**: {} %".format(round(waste_collection_efficiency_urban)))
+    c2.write("**New Waste collection Efficiency**: {} %".format(round(st.session_state.collection_efficiency)))
+    if(waste_collection_efficiency_urban>=100):
+        st.write("##### :green[Max efficiency acheived]")
+
+    if 'delta_wasteburn' not in st.session_state:
+        st.session_state.delta_wasteburn = 0 #Default val
+    reduce_waste_burn = st.slider('I want to reduce my waste burn rate by (%)',
+                                  min_value=0, max_value=100,
+                                  key='delta_wasteburn',
+                                  on_change=update_burn_rate)
+    c1, c2 = st.columns(2)
+    c1.write("**Old Waste burn rate**: {} %".format(round(waste_burn_rate_urban)))
+    c2.write("**New Waste burn rate**: {} %".format(round(st.session_state.burnrate)))
+    if(waste_burn_rate_urban<=0):
+        st.write("##### :green[Max efficiency acheived]")
+
+    if 'delta_wastegeneration' not in st.session_state:
+        st.session_state.delta_wastegeneration = 0 #Default val
+    change_waste_generation = st.slider('I want to change my waste generate rate by (%)',
+                                        min_value=-100, max_value=100,
+                                          key='delta_wastegeneration',
+                                          on_change=update_gen_rate)
+
+    c1, c2 = st.columns(2)
+    c1.write("**Old Waste generation rate**: {} (kg/cap/day)".format(round(percapita_waste_gen_urban, 2)))
+    c2.write("**New Waste generation rate**: {} (kg/cap/day)".format(round(st.session_state.genrate, 2)))
+
+    st.divider()
 
     col1, col2, col3 = st.columns(3)
 
@@ -244,44 +276,3 @@ with tab2:
                 #delta="1.2 TPD"
                 )
         
-
-        
-    st.write("# Actionables - Urban interventions")
-    
-    if 'delta_wastecollection' not in st.session_state:
-        st.session_state.delta_wastecollection = 0 #Default val
-    increase_waste_collection = st.slider('I want to increase my waste collection efficiency by (%)',
-                                          min_value=0, max_value=100,
-                                          key='delta_wastecollection',
-                                          on_change=update_collection_efficiency)
-    
-    c1, c2 = st.columns(2)
-    c1.write("#### Old Waste collection Efficiency: {} %".format(round(waste_collection_efficiency_urban)))
-    c2.write("#### New Waste collection Efficiency: {} %".format(round(st.session_state.collection_efficiency)))
-    if(waste_collection_efficiency_urban>=100):
-        st.write("##### :green[Max efficiency acheived]")
-
-    if 'delta_wasteburn' not in st.session_state:
-        st.session_state.delta_wasteburn = 0 #Default val
-    reduce_waste_burn = st.slider('I want to reduce my waste burn rate by (%)',
-                                  min_value=0, max_value=100,
-                                  key='delta_wasteburn',
-                                  on_change=update_burn_rate)
-    c1, c2 = st.columns(2)
-    c1.write("#### Old Waste burn rate: {} %".format(round(waste_burn_rate_urban)))
-    c2.write("#### New Waste burn rate: {} %".format(round(st.session_state.burnrate)))
-    if(waste_burn_rate_urban<=0):
-        st.write("##### :green[Max efficiency acheived]")
-
-    if 'delta_wastegeneration' not in st.session_state:
-        st.session_state.delta_wastegeneration = 0 #Default val
-    change_waste_generation = st.slider('I want to change my waste generate rate by (%)',
-                                        min_value=-100, max_value=100,
-                                          key='delta_wastegeneration',
-                                          on_change=update_gen_rate)
-
-    c1, c2 = st.columns(2)
-    c1.write("#### Old Waste generation rate: {} (kg/cap/day)".format(round(percapita_waste_gen_urban, 2)))
-    c2.write("#### New Waste generation rate: {} (kg/cap/day)".format(round(st.session_state.genrate, 2)))
-
-    
