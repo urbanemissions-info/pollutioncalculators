@@ -20,6 +20,7 @@ numpy==2.0.1
 packaging==24.1
 pandas==2.2.2
 pillow==10.4.0
+plotly==5.23.0
 protobuf==5.27.3
 PuLP==2.9.0
 pyarrow==17.0.0
