@@ -15,4 +15,6 @@ Please find the issue for each tool that can be open-sourced.
 
 Create an issue for other tools as required.
 
+All Python codes are formatted using [Black](https://black.readthedocs.io/en/stable/index.html). Contributors should do the same to maintain consistency in formatting.
+
 
